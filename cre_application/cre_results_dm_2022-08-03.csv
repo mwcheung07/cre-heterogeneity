@@ -1,0 +1,76 @@
+"Exposure: Moderate Drought, Outcome: Stunted",Estimate,Std. Error,t value,Pr(>|t|)
+(Intercept),0.001710743,0.000122029,14.01916865,1.31E-44
+`age_under2: no & cropland_over25pc: yes`,0.003664711,0.000117559,31.17341367,2.32E-212
+`age_under2: yes & education_none_to_primary: no`,-0.011905399,0.000162934,-73.06902885,0
+`age_under1: yes & education_none_to_primary: no & cropland_over25pc: yes`,0.000509145,0.00010569,4.817336882,1.46E-06
+`age_under2: no & education_none_to_primary: yes`,0.012713581,0.000140714,90.35071011,0
+`age_under1: no & education_none_to_primary: yes`,-0.013112837,0.000132662,-98.84381608,0
+`age_under1: yes & cropland_over25pc: no`,0.000457105,7.82E-05,5.848195654,4.98E-09
+`age_under1: yes & education_none_to_primary: no`,0.012977212,0.000146657,88.48660418,0
+`age_under2: yes & education_none_to_primary: no & cropland_over50pc: yes`,-1.59E-05,6.07E-05,-0.261595564,0.79363378
+`age_under2: yes & education_none_to_primary: yes & cropland_over25pc: no`,-0.00017283,6.48E-05,-2.668479376,0.007620723
+`age_under2: no & education_none: yes`,-7.76E-05,3.03E-05,-2.566044086,0.010287957
+`age_under2: no & education_none_to_primary: yes & middle_africa: no`,0.00012889,0.000108292,1.190204026,0.233968918
+`sex_male: no & middle_africa: yes`,5.76E-05,5.94E-05,0.970058574,0.332019544
+`education_none_to_primary: yes & western_africa: yes`,0.018248396,4.83E-05,378.0803713,0
+`age_under1: yes & education_none: no`,-0.000182547,5.66E-05,-3.226408207,0.00125393
+`age_under2: yes & cropland_over25pc: no`,-0.002549922,9.36E-05,-27.25071991,6.09E-163
+`sex_male: yes & age_under1: no & education_none_to_secondary: yes & middle_africa: no`,-0.000137784,6.32E-05,-2.17967945,0.029283458
+`sex_male: no & education_none: no`,-0.000925216,3.32E-05,-27.8936824,1.35E-170
+`education_none_to_primary: yes & middle_africa: no`,-0.003516431,6.90E-05,-50.99919036,0
+`education_none_to_primary: no & middle_africa: yes`,0.003755626,0.000105112,35.72987716,6.56E-278
+`sex_male: no & age_under2: no & mass_media: no`,-0.000125656,3.32E-05,-3.78450595,0.0001541
+`sex_male: yes & age_under2: no`,0.000115646,3.16E-05,3.65472916,0.00025758
+`age_under2: no & education_none_to_secondary: yes`,-0.004483242,6.13E-05,-73.19321044,0
+`age_under2: yes & education_none_to_secondary: yes`,-0.00256636,5.55E-05,-46.26043495,0
+`sex_male: yes & age_under1: no`,0.012171507,0.000107135,113.6093543,0
+`age_under1: no & education_none_to_secondary: yes & cropland_over25pc: yes`,-0.000187214,5.90E-05,-3.170942907,0.001519889
+`sex_male: no & age_under1: yes`,-0.01202811,0.000106583,-112.8522129,0
+`sex_male: no & education_none_to_primary: no`,0.013561991,0.000108041,125.5267597,0
+`age_under2: no & western_africa: yes`,8.32E-05,7.20E-05,1.156562857,0.247453651
+`sex_male: no & age_under1: no & mass_media: no`,6.81E-05,3.07E-05,2.214324945,0.026808586
+`sex_male: yes & education_none_to_primary: yes`,-0.013529146,0.000110575,-122.3526856,0
+`agri_occupation: yes & cropland_over25pc: no`,-5.63E-05,1.65E-05,-3.409104376,0.000652012
+`age_under3: no & education_none_to_secondary: yes & middle_africa: no`,0.003032489,1.62E-05,187.1499566,0
+`age_under2: no & education_none_to_primary: no & cropland_over25pc: no`,0.000680467,4.98E-05,13.65611732,2.02E-42
+`age_under2: no & middle_africa: no & cropland_over25pc: yes`,-0.000252639,8.64E-05,-2.923510688,0.003461826
+`age_under1: no & middle_africa: no`,0.00042244,0.000122536,3.447463256,0.0005661
+`mass_media: no`,0.000842591,1.21E-05,69.42331297,0
+`age_under2: no & cropland_over25pc: no & wealth_poor: yes`,0.001247184,2.24E-05,55.76410202,0
+`sex_male: no & age_under3: no & education_none: yes`,0.000370811,2.81E-05,13.21361466,7.88E-40
+`sex_male: yes & education_none: yes`,0.000994652,3.30E-05,30.13339906,1.27E-198
+`sex_male: yes & education_none: yes & cropland_over50pc: yes`,-3.06E-05,2.89E-05,-1.060526047,0.2889078
+`age_under1: no & western_africa: yes`,-0.00020239,9.32E-05,-2.170898433,0.029941096
+`age_under1: no & middle_africa: yes & cropland_over25pc: no`,0.000244388,7.48E-05,3.269340053,0.001078335
+`age_under1: no & education_none_to_primary: yes & middle_africa: no`,-0.000231625,0.000125779,-1.841527644,0.065547108
+`sex_male: yes & age_under1: no & small_birthsize: yes & education_none: yes`,0.000510172,2.67E-05,19.11642726,2.54E-81
+`age_under1: yes & education_none: yes & western_africa: yes`,-9.43E-05,5.40E-05,-1.747686373,0.080521289
+`sex_male: no & age_under2: yes & education_none_to_primary: no & western_africa: yes`,-3.71E-05,4.53E-05,-0.819528444,0.412486851
+`age_under1: no & education_none_to_primary: yes & western_africa: yes`,0.000500962,0.000105219,4.761113234,1.93E-06
+`education_none: no & cropland_over25pc: no`,0.000152865,2.61E-05,5.859282791,4.66E-09
+`age_under1: no & education_none_to_primary: no & rural_residence: yes`,-0.000189777,2.94E-05,-6.46061188,1.05E-10
+`age_under2: yes & rural_residence: yes & western_africa: no`,0.000327833,3.35E-05,9.781706896,1.38E-22
+`age_under2: no & middle_africa: no`,-0.001836006,0.000126203,-14.54807952,6.69E-48
+`sex_male: no & education_none_to_primary: no & rural_residence: yes`,-7.08E-05,3.43E-05,-2.063075457,0.039107926
+`age_under1: no & education_none_to_primary: no & cropland_over50pc: yes`,-3.23E-05,7.15E-05,-0.45217072,0.651146939
+`age_under1: yes & education_none_to_primary: no & western_africa: yes & cropland_over25pc: yes`,-0.000291381,9.11E-05,-3.198960037,0.001379655
+`cropland_over50pc: no`,-0.000600924,7.88E-05,-7.623827888,2.48E-14
+`sex_male: yes & age_under1: yes & education_none: no`,5.24E-05,4.90E-05,1.067973207,0.285535067
+`rural_residence: yes`,0.000914883,1.49E-05,61.37110719,0
+`education_none_to_primary: no & western_africa: no`,-0.018585386,7.99E-05,-232.587291,0
+`age_under2: no & education_none: no & middle_africa: yes`,0.000120223,8.65E-05,1.390397724,0.164411101
+`age_under2: no & education_none_to_primary: yes & western_africa: yes`,-0.000226967,7.70E-05,-2.948291947,0.003196059
+`sex_male: no & age_under1: no & western_africa: yes & cropland_over25pc: no`,0.000110411,3.76E-05,2.93443023,0.003342334
+`age_under1: no & education_none_to_primary: yes & western_africa: yes & cropland_over25pc: yes`,-0.000595333,3.35E-05,-17.77119965,1.50E-70
+`age_under1: no & rural_residence: yes & cropland_over25pc: no`,-0.000205971,2.41E-05,-8.532893843,1.45E-17
+`education_none_to_primary: yes & cropland_over50pc: yes`,3.46E-05,8.12E-05,0.42551069,0.670465308
+`age_under3: no & education_none_to_primary: no`,0.001125442,2.87E-05,39.1640078,0
+`sex_male: no & age_under1: no & education_none: yes & cropland_over50pc: yes`,3.11E-05,3.22E-05,0.965168795,0.33446251
+`sex_male: yes & age_under1: no & cropland_over25pc: yes`,-7.72E-06,5.17E-05,-0.149292671,0.881322987
+`age_under1: yes & education_none: yes & cropland_over50pc: yes`,8.26E-06,3.61E-05,0.228811504,0.819015873
+`sex_male: no & cropland_over25pc: no`,-3.70E-05,3.98E-05,-0.930663869,0.352029617
+`sex_male: yes & education_none_to_primary: yes & western_africa: yes`,0.000105796,2.75E-05,3.841128059,0.000122543
+`cropland_over75pc: yes`,0.006024897,1.56E-05,384.9887035,0
+`sex_male: yes & age_under1: no & education_none_to_primary: no & cropland_over25pc: yes`,-4.48E-05,4.55E-05,-0.983460047,0.325383348
+`sex_male: yes & education_none_to_primary: no & education_none_to_secondary: yes`,5.12E-05,7.15E-05,0.715289365,0.474431858
+`education_none: no & middle_africa: yes`,-3.63E-05,6.58E-05,-0.551633626,0.581200574

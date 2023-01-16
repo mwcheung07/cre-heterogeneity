@@ -1,0 +1,50 @@
+"Exposure: 4w mild drought, Outcome: Cough (Aw: Tropical, savannah)",Estimate,Std. Error,t value,Pr(>|t|)
+(Intercept),0.029050212,6.00E-05,484.383472,0
+`sex: female & fic: not fully immunized`,-0.012514113,1.60E-05,-783.7461407,0
+`sex: female`,0.025794871,6.31E-05,409.0146593,0
+`sex: male & waterpremise: no`,0.013196876,4.53E-05,291.3098795,0
+`massmedia: yes & waterpremise: no`,0.00145774,4.81E-05,30.3126129,8.97E-201
+`massmedia: no & waterpremise: yes`,-0.001751071,4.63E-05,-37.85032811,6.19693143831762e-311
+`hhlhead: female`,-0.034324671,4.89E-05,-702.3673004,0
+`sex: female & hhlhead: male`,1.02E-06,2.39E-05,0.042960977,0.96573274
+`sex: male & edulevel_primary: yes`,0.001056799,2.98E-05,35.42322783,7.00E-273
+`partner: no & fic: fully immunized`,-0.000495874,1.29E-05,-38.35680993,3.50094916643107e-319
+`edulevel_primary: yes & massmedia: yes & waterpremise: no`,3.87E-05,2.78E-05,1.393143364,0.16358004
+`residence: urban`,0.005144111,3.99E-05,129.0739506,0
+`sex: female & waterpremise: yes`,-0.015721025,5.52E-05,-284.7213927,0
+`sex: male & fic: fully immunized`,0.012961732,1.90E-05,682.9058782,0
+`residence: rural & waterpremise: yes`,-3.29E-05,2.80E-05,-1.175004698,0.239996086
+`residence: rural & sex: female & edulevel_primary: no & waterpremise: no`,3.19E-05,2.14E-05,1.49206845,0.135684867
+`sex: male & massmedia: yes & waterpremise: no`,1.19E-05,3.88E-05,0.307061137,0.758797581
+`waterpremise: yes & hhlhead: male`,-0.000223216,2.69E-05,-8.285711736,1.19E-16
+`fic: fully immunized & hhlhead: female`,6.09E-05,1.28E-05,4.751362192,2.02E-06
+`residence: rural & hhlhead: male`,5.43E-05,2.26E-05,2.404638119,0.016190586
+`edulevel_primary: no & massmedia: no`,0.000356539,2.27E-05,15.72741885,1.17E-55
+`residence: rural & sex: female`,-0.000266046,1.56E-05,-17.08879531,2.31E-65
+`edulevel_primary: no & hhlhead: male`,-0.021392709,3.05E-05,-700.3817827,0
+`edulevel_primary: yes & hhlhead: female`,0.02161664,3.90E-05,554.42863,0
+`edulevel_primary: yes & waterpremise: no`,-0.001226659,2.62E-05,-46.74203596,0
+`sex: female & massmedia: no`,-0.000520418,3.64E-05,-14.31149037,2.10E-46
+`sex: male & edulevel_primary: yes & massmedia: yes & waterpremise: no`,0.000282582,2.57E-05,11.011915,3.50E-28
+`sex: female & edulevel_primary: yes & waterpremise: yes`,0.002212356,3.52E-05,62.88855413,0
+`residence: urban & massmedia: yes & waterpremise: no`,-8.15E-05,2.32E-05,-3.505843425,0.000455394
+`residence: rural & edulevel_secondary: no & massmedia: yes`,-0.000539035,9.90E-06,-54.47483744,0
+`residence: urban & sex: male & waterpremise: no`,0.00018027,2.56E-05,7.044432991,1.88E-12
+`residence: rural & massmedia: no`,-0.000309582,1.90E-05,-16.29483,1.32E-59
+`massmedia: no & partner: yes & waterpremise: yes`,0.000279002,3.43E-05,8.135688131,4.15E-16
+`sex: female & edulevel_primary: no & edulevel_higher: no & fic: not fully immunized & waterpremise: yes`,0.002210783,2.29E-05,96.52815237,0
+`sex: female & edulevel_primary: no & edulevel_higher: no & fic: fully immunized & waterpremise: yes`,0.003772502,1.78E-05,211.5208022,0
+`sex: male & massmedia: no & waterpremise: yes & hhlhead: male`,-5.36E-05,3.66E-05,-1.46338147,0.143366678
+`edulevel_secondary: no & massmedia: no`,-0.0001136,1.08E-05,-10.53619605,6.10E-26
+`edulevel_primary: yes & waterpremise: no & hhlhead: female`,-6.79E-05,3.10E-05,-2.187858548,0.028682587
+`edulevel_primary: no & edulevel_higher: no & fic: not fully immunized`,0.002274112,1.52E-05,149.719027,0
+`sex: female & edulevel_primary: yes & massmedia: no & fic: not fully immunized`,0.000560702,2.21E-05,25.40425538,7.57E-142
+`residence: urban & fic: fully immunized & waterpremise: no`,-8.67E-05,1.32E-05,-6.555598265,5.57E-11
+`sex: male & edulevel_primary: yes & fic: fully immunized`,-0.001016538,2.03E-05,-50.01303601,0
+`sex: male & edulevel_secondary: no`,-0.001272238,9.83E-06,-129.3675844,0
+`edulevel_primary: yes & fic: not fully immunized & waterpremise: no`,0.00157932,2.03E-05,77.97232782,0
+`edulevel_secondary: no & hhlhead: female`,-0.000416453,1.55E-05,-26.93684261,3.74E-159
+`fic: not fully immunized & waterpremise: yes`,0.001022346,1.42E-05,72.19778576,0
+`sex: male & waterpremise: no & hhlhead: female`,-4.27E-05,2.81E-05,-1.517447774,0.129157342
+`residence: urban & waterpremise: no & hhlhead: female`,-6.60E-05,2.93E-05,-2.250448468,0.024423005
+`residence: rural & massmedia: yes & waterpremise: no & hhlhead: female`,-4.51E-05,1.80E-05,-2.505074413,0.012244396

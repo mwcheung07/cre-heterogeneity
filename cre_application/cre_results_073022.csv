@@ -1,0 +1,30 @@
+,Estimate,Std. Error,t value,Pr(>|t|)
+(Intercept),0.041507079,0.000130264,318.6376254,0
+`edulevel.secondary<=0.5 & fic<=0.5`,0.011897334,0.000147875,80.45532453,0
+`edulevel.secondary>0.5 & fic>0.5`,-0.012342261,0.000136982,-90.1016381,0
+`edulevel.secondary<=0.5 & massmedia<=0.5`,-0.000841777,0.00016931,-4.97180519,6.65E-07
+`massmedia<=0.5 & partner>0.5`,0.000461204,0.000148341,3.109082388,0.001877305
+`partner<=0.5 & waterpremise<=0.5`,-0.000472578,0.000115048,-4.107666229,4.00E-05
+`massmedia<=0.5 & fic<=0.5`,-0.005340246,0.000165667,-32.23484283,1.29E-226
+`edulevel.no education>0.5 & fic<=0.5`,4.64E-05,4.74E-05,0.977913371,0.328119919
+`edulevel.secondary<=0.5 & partner>0.5`,0.000141152,0.000131821,1.070785654,0.28426882
+`edulevel.secondary<=0.5 & waterpremise>0.5`,-0.012480168,5.57E-05,-224.2259985,0
+`massmedia>0.5 & fic>0.5`,0.006085193,0.000154175,39.46938511,0
+`partner<=0.5 & fic>0.5`,0.007515711,0.000231732,32.43281866,2.30E-229
+`partner>0.5`,0.012781613,0.000266446,47.97073295,0
+`partner>0.5 & fic<=0.5`,-0.007733279,0.000232448,-33.26881221,3.73E-241
+`residence.urban<=0.5`,-0.010631844,2.07E-05,-513.7994759,0
+`edulevel.primary<=0.5`,-0.026037106,4.71E-05,-553.1427985,0
+`edulevel.primary>0.5 & waterpremise>0.5`,-0.003297767,0.000163214,-20.2051342,1.43E-90
+`edulevel.no education<=0.5 & edulevel.primary<=0.5 & massmedia>0.5 & waterpremise<=0.5`,0.003453143,6.84E-05,50.51999451,0
+`edulevel.no education>0.5 & waterpremise>0.5`,-0.003617759,0.000165407,-21.87191813,9.35E-106
+`edulevel.secondary<=0.5 & massmedia<=0.5 & partner>0.5`,0.000854794,0.000159811,5.348773583,8.88E-08
+`edulevel.secondary>0.5 & waterpremise<=0.5`,0.012776522,7.49E-05,170.5533406,0
+`sex.male<=0.5`,-0.002895537,1.79E-05,-162.0846502,0
+`massmedia<=0.5 & fic<=0.5 & waterpremise>0.5`,4.92E-06,6.02E-05,0.08173769,0.934855496
+`edulevel.secondary<=0.5 & partner>0.5 & fic<=0.5`,0.000450407,0.00015529,2.900436455,0.003727376
+`massmedia<=0.5 & partner>0.5 & fic<=0.5`,-0.000807202,0.000145535,-5.546433619,2.92E-08
+`edulevel.higher<=0.5 & edulevel.secondary<=0.5 & partner>0.5 & waterpremise>0.5`,-0.000242949,0.000157939,-1.538242457,0.123993018
+`edulevel.no education<=0.5 & edulevel.primary<=0.5 & massmedia<=0.5 & waterpremise<=0.5`,0.003469742,9.05E-05,38.3598428,3.11518271015823e-319
+`edulevel.secondary<=0.5 & massmedia<=0.5 & fic<=0.5`,0.000110056,8.64E-05,1.27433102,0.202549566
+`edulevel.primary>0.5 & massmedia<=0.5`,-0.00018971,4.94E-05,-3.837781702,0.000124239

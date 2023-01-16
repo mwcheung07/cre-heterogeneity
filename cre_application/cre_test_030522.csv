@@ -1,0 +1,24 @@
+term,estimate,std.error,statistic,p.value
+(Intercept),0.017603969,1.01E-04,174.309161,0
+`edulevel.higher<=0.5`,0.008210198,9.88E-05,83.12604302,0
+`residence.urban<=0.5 & massmedia<=0.5`,-6.72E-04,9.64E-05,-6.977091796,3.02E-12
+`residence.urban>0.5 & waterpremise<=0.5`,0.002554672,1.06E-04,24.16161393,8.02E-129
+`massmedia>0.5 & waterpremise<=0.5`,-1.86E-04,8.06E-05,-2.311166929,0.020824472
+`residence.urban<=0.5 & waterpremise>0.5`,-0.002688732,1.19E-04,-22.5515944,1.69E-112
+`massmedia>0.5 & hhlhead.male>0.5`,0.014783663,1.07E-04,137.8102589,0
+`residence.urban>0.5 & hhlhead.male>0.5`,-0.012443982,1.09E-04,-113.704286,0
+`residence.urban>0.5 & edulevel.primary>0.5`,0.011539699,5.00E-05,230.6046554,0
+`residence.urban<=0.5 & edulevel.secondary>0.5`,-0.002248114,2.73E-05,-82.34347329,0
+`massmedia<=0.5 & hhlhead.male<=0.5`,-0.014344727,1.12E-04,-127.7145861,0
+`residence.urban<=0.5 & hhlhead.male<=0.5`,0.012535072,1.05E-04,119.5804401,0
+`residence.urban>0.5 & massmedia>0.5`,1.57E-04,1.13E-04,1.388034957,0.165127678
+`residence.urban<=0.5 & edulevel.primary<=0.5`,-0.010154236,3.28E-05,-309.8431486,0
+`edulevel.primary>0.5 & massmedia>0.5 & hhlhead.male>0.5`,-6.61E-04,4.47E-05,-14.79524345,1.65E-49
+`waterpremise<=0.5 & hhlhead.male>0.5`,1.84E-04,5.30E-05,3.468122884,5.24E-04
+`residence.urban<=0.5 & massmedia<=0.5 & waterpremise>0.5`,2.81E-04,9.18E-05,3.058812739,0.002222403
+`residence.urban>0.5 & partner>0.5`,6.50E-04,1.32E-04,4.907911088,9.21E-07
+`edulevel.higher<=0.5 & massmedia>0.5`,-2.15E-04,1.04E-04,-2.066464294,0.038785721
+`partner>0.5 & waterpremise<=0.5`,-3.51E-04,8.64E-05,-4.063879723,4.83E-05
+`residence.urban>0.5 & massmedia>0.5 & partner>0.5`,-2.43E-04,1.41E-04,-1.719127678,0.085592404
+`partner<=0.5`,-3.34E-04,8.06E-05,-4.144600509,3.41E-05
+`sex.male<=0.5`,-8.40E-04,1.78E-05,-47.12213213,0

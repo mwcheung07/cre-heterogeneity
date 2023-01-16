@@ -1,0 +1,860 @@
+---
+title: "CRE Application"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      message = FALSE,
+                      results = 'markup',
+                      warning = FALSE)
+def.chunk.hook  <- knitr::knit_hooks$get("chunk")
+knitr::knit_hooks$set(chunk = function(x, options) {
+  x <- def.chunk.hook(x, options)
+  ifelse(options$size != "normalsize", paste0("\n \\", options$size,"\n\n", x, "\n\n \\normalsize"), x)
+})
+```
+
+```{r load packages, echo=F}
+library(tidyverse)
+library(readxl)
+# library(causalTree)
+library(bcf)
+library(randomForest)
+library(gbm)
+library(inTrees)
+library(xgboost)
+library(glmnet)
+library(stabs)
+library(grf)
+library(DiagrammeR)
+library(dbarts)
+library(broom)
+library(janitor)
+library(collapsibleTree)
+library(modelr)
+```
+
+# Functions
+
+```{r sourced author functions}
+
+# generate rules from random forest (see cre function for parameter definitions)
+genrulesRF = function(X, y, nt,S ,L) {
+  
+  # get number of observations from discovery data
+  N = dim(X)[1]
+  
+  # determine random forest sample sample size, max number of nodes (function of L)
+  sf = min(1, (11*sqrt(N)+1)/N)
+  mn = 2+floor(rexp(1, 1/(L-2)))
+  ns = S
+  
+  # generate single tree using rf algorithm
+  forest = randomForest(x = X, y=y, sampsize = sf*N ,replace=F, ntree =1, maxnodes=mn, nodesize = ns)
+  
+  # generate the remaining trees
+  for(i in 2:nt) {
+    mn = 2+floor(rexp(1, 1/(L-2)))
+    ns = S
+    model1 = randomForest(x = X, y=y, sampsize = sf*N ,replace=F, ntree =1, maxnodes=mn, nodesize = ns)
+    forest = combine(forest, model1)
+  }
+  
+  # combine trees and get rules
+  treelist = RF2List(forest)
+  rules = extractRules(treeList=treelist, X=X, ntree=nt, maxdepth=15)
+  rules = c(rules)
+  #rules = rules[take1(length(rules))]
+  
+  # create matrix of rules and format column name
+  rulesmat = matrix(rules)
+  colnames(rulesmat) = "condition"
+  
+  # prune by error = 0.025 and return rules
+  metric = getRuleMetric(rulesmat,X,y)
+  pruned = pruneRule(metric, X, y, 0.025, typeDecay = 2)
+  unique(pruned[,4])
+}
+
+# generate rules from gradient boosting model
+genrulesGBM = function(X, y, nt, S, L) {
+  
+  # get number of observations from discovery data
+  N = dim(X)[1]
+  
+  # determine parameters for gbm like random forest function
+  sf = min(1, (11*sqrt(N)+1)/N)
+  mn = 2+floor(rexp(1, 1/(L-2)))
+  ns = S
+  
+  ## if ITE estimates are binary, recode as 0-1? (don't think this ever applies to us)
+  dist = ifelse(is.numeric(y), "gaussian", "bernoulli")
+  if (is.numeric(y)==F){
+    y = as.numeric(y)-1
+  }
+  
+  # fit gbm models like random forest 
+  model1 = gbm.fit(x = X, y=y, bag.fraction = sf,n.trees =1, interaction.depth=(mn/2)
+                   ,shrinkage = 0.01,distribution = dist, verbose = F, n.minobsinnode = ns)
+  for(i in 2:nt) {
+    mn = 2+floor(rexp(1, 1/(L-2)))
+    model1$interaction.depth = (mn/2)
+    model1 = gbm.more(model1, n.new.trees=1, verbose = F)
+  }
+  
+  # combine trees and get rules, (applying custom take1 function to sample rules?)
+  treelist = GBM2List(model1, X)
+  rules = extractRules(treelist, X=X, ntree=nt, maxdepth=15)
+  rules = c(rules)
+  rules = rules[take1(length(rules))]
+  
+  # create matrix of rules and format column name
+  rulesmat = matrix(rules)
+  colnames(rulesmat) = "condition"
+  
+  # prune by error = 0.025 and return rules
+  metric = getRuleMetric(rulesmat,X,y)
+  pruned = pruneRule(metric, X, y, 0.025, typeDecay = 1)
+  unique(pruned[,4])
+}
+
+# function to sample rules (only for gbm?)
+take1 = function(len) {
+  
+  # generate vector of integers from 1:length(rules) where every other odd-even pair may be flipped in order
+  out = c()
+  i = 0
+  while (i < len){
+    out = c(out, i+sample(1:2))
+    i = i+2
+  }
+  
+  # trim vector to length(rules)
+  out = out[1:len]
+  
+  # return odd indices of vector
+  out[seq(1, len, 2)]
+}
+
+# create \tilde{X} rule matrix
+# - remove rules that are met less than t% or more than 1-t% of times
+# - remove rules than have exact correlation with other rule
+createX.take1 = function(X, rules, t, corelim=1) {
+  
+  # create \tilde{X} matrix
+  Xr = matrix(0, nrow=dim(X)[1], ncol=length(rules))
+  for (i in 1:length(rules)){
+    Xr[eval(parse(text = rules[i])),i] = 1
+  }
+  
+  Nr = dim(Xr)[2]
+  ind = 1:Nr
+
+  # adjust minimum support if sample size is smaller than 200
+  if(dim(X)[1]<200){
+    t= 0.05
+  }
+  
+  # get proportion of times each rule is met in sample
+  sup = apply(Xr, 2, mean)
+  
+  # which of the rules is met less than 2.5% or more than 97.5% of time
+  elim = which((sup<t)|(sup>(1-t)))
+  
+  # if any less than 2.5% or more than 97.5%, remove rule from list of rules
+  if(length(elim)>0){
+    ind = ind[-elim]
+  }
+  
+  # correlation of list of rules
+  C = cor(Xr[,ind])
+  diag(C) = 0
+  
+  # define new number of rules if any were removed by minimum support threshold
+  Nr = dim(Xr[,ind])[2]
+  
+  # remove rules that have high (cor = 1) correlation with other rule
+  elim=c()
+  for(i in 1:(Nr-1)){
+    elim = c(elim, which(round(abs(C[i,(i+1):Nr]), digits=4)>=corelim) +i)
+    #elim = c(elim, which(round((C[i,(i+1):Nr]), digits=4)>=corelim) +i)
+  }
+  
+  if(length(elim)>0){
+    ind = ind[-elim]
+  }else{
+    ind = ind
+  }
+  #ind = ind[-elim]
+
+  # return \tilde{X} matrix, rules, and removed rules
+  Xr = Xr[,ind]
+  removed_rules <- rules[!(1:length(rules) %in% ind)]
+  rules = rules[ind]
+  
+  list(data.matrix(Xr), rules, removed_rules)
+}
+
+```
+
+```{r added functions}
+
+# Create data frame of all possible subgroups that are present in selected causal rules
+generate_subgroups <- function(cre_app_results, levels) {
+  
+  # determine which covariates/EMs appear in final model
+  model_levels <- levels %>%
+    dplyr::rowwise() %>%
+    mutate(in_model = ifelse(any(str_detect(row.names(cre_app_results), var)), 1, 0))
+  
+  # create all possible (binary) combinations of covariates/EMs that appear in final model
+  model_levels <- model_levels %>%
+    filter(in_model == 1) %>%
+    dplyr::select(-in_model) %>%
+    mutate(across(-var, ~paste0(var, ": ", .))) %>%
+    t() %>%
+    row_to_names(row_number = 1) %>%
+    as.data.frame(.) %>%
+    expand.grid(.)
+  
+  return(model_levels)
+  
+}
+
+# Function to estimate subgroup CATES, CIs, p-values during inference estimation step
+estimate_cates <- function(inf_dat, levels) {
+  
+  # regress inference data ITEs on causual rules
+  ols_inf <- lm(tau_est_inf ~., data = inf_dat)
+  
+  # change ols coefficient rules back to factor levels
+  cre_app_results <- as.data.frame(summary(ols_inf)$coefficients)
+  
+  for (cov_em in levels$var) {
+    rownames(cre_app_results) <- str_replace(rownames(cre_app_results),
+                                             paste0(cov_em, "<=", 0.5),
+                                             paste0(cov_em, ": ", levels$level_0[which(levels$var == cov_em)]))
+    rownames(cre_app_results) <- str_replace(rownames(cre_app_results),
+                                             paste0(cov_em, ">", 0.5),
+                                             paste0(cov_em, ": ", levels$level_1[which(levels$var == cov_em)]))
+  }
+  
+  # create data frame of subgroup treatment effect estimates and confidence intervals
+  ## data frame with all possible subgroups
+  model_levels <- generate_subgroups(cre_app_results = cre_app_results,
+                                     levels = levels)
+  
+  ## data frame with all subgroup estimates, p-values, and 95% CI
+  subgroup_tab <- model_levels %>%
+    rowwise() %>%
+    unite("subgroup", sep = ", ") %>%
+    mutate(estimate = NA,
+           p = NA,
+           lower_ci = NA,
+           upper_ci = NA)
+  
+  ## populate subgroup estimates, p-values, and 95% CIs in table
+  for (i in 1:nrow(model_levels)) {
+    
+    contrast <- c(1)
+    
+    for (j in 2:nrow(cre_app_results)) {
+      
+      coef_contrast <- str_remove_all(rownames(cre_app_results)[j], "`")
+      coef_vars <- str_split(coef_contrast, " & ")[[1]]
+      
+      if (all(coef_vars %in% unlist(model_levels[i,]))) {
+        contrast <- c(contrast, 1)
+      } else {
+        contrast <- c(contrast, 0)
+      }
+    }
+    
+    estimate <- as.numeric(contrast %*% cre_app_results$Estimate)
+    se  <- as.numeric(sqrt(t(contrast) %*% vcov(ols_inf, complete = F) %*% contrast))
+    p <- 2*pnorm(-abs(estimate / se))
+    
+    subgroup_tab$estimate[i] <- estimate
+    subgroup_tab$p[i] <- p
+    subgroup_tab$lower_ci[i] <- estimate - qnorm(0.975)*se
+    subgroup_tab$upper_ci[i] <- estimate + qnorm(0.975)*se
+    
+  }
+  
+  baseline_estimate <- cre_app_results$Estimate[1]
+  baseline_p <- cre_app_results$`Pr(>|t|)`[1]
+  baseline_lower_ci <- confint(ols_inf)[1,1]
+  baseline_upper_ci <- confint(ols_inf)[1,2]
+  
+  subgroup_tab <- subgroup_tab %>%
+    add_row(subgroup = "baseline subgroup",
+            estimate = baseline_estimate,
+            p = baseline_p,
+            lower_ci = baseline_lower_ci,
+            upper_ci = baseline_upper_ci) 
+  
+  # return original OLS results and all subgroup CATE estimates, 95% CIs, and p-values
+  return(list("ols_results" = cre_app_results,
+              "subgroups" = subgroup_tab))
+}
+
+# Function to predict CRE CATEs
+predict_cre <- function(subgroups, effect_mods, data) {
+
+  ## join data subgroups with CRE subgroup CATEs
+  data <- data %>%
+    dplyr::select(effect_mods) %>%
+    map2_dfc(colnames(.), ., paste, sep = ': ') %>%
+    rowwise() %>%
+    unite("subgroup", sep = ", ") %>%
+    mutate(estimate = NA_real_,
+           lower_ci = NA_real_,
+           upper_ci = NA_real_)
+  
+  for (i in 1:nrow(data)) {
+    
+    subgroup_index <- NA_integer_
+    
+    curr_data <- data %>%
+      dplyr::select(subgroup) %>%
+      dplyr::slice(i) %>%
+      pull()
+    
+    for(j in 1:nrow(subgroups)) {
+      
+      curr_subgroup <- subgroups %>%
+        dplyr::select(subgroup) %>%
+        dplyr::slice(j) %>%
+        unlist(use.names=F) %>%
+        str_split(", ") %>%
+        first()
+      
+      in_subgroup <- all(str_detect(curr_data, curr_subgroup))
+      
+      if (in_subgroup == T) {
+        subgroup_index <- j
+        break
+      } else {}
+      
+    }
+    
+    data$estimate[i] <- subgroups$estimate[subgroup_index]
+    data$lower_ci[i] <- subgroups$lower_ci[subgroup_index]
+    data$upper_ci[i] <- subgroups$upper_ci[subgroup_index]
+    
+  }
+  
+  return(data)
+}
+
+# Function to get bootstrapped subgroup CATES and CIs
+subgroup_boot <- function(inf_dat, levels) {
+  
+  ## estimate and return bootstrapped CATEs and CIs
+  boot_results <- estimate_cates(inf_dat = inf_dat,
+                                 levels = levels)
+  
+  boot_results$subgroups
+}
+  
+```
+
+# CRE
+
+```{r cre}
+
+# CRE function
+# other notes: - authors used logistic BART to estimate ITE for binary outcome instead of BCF, mention BCF can be used for continuous outcome
+#              - function currently coded to take binary factor covariates/EMs so output can be interpretable
+#                 - also assumes no overlapping yes/no categories across binary factor covariates/EMs ('1' factor levels and '0' factor levels are mutually exclusive)
+
+## function parameters:
+### disc_pct: percent of data to be used as discovery subsample
+### balanced_exposure_split: if true, exposed and unexposed groups balanced between discovery and inference subsamples
+### rf_or_gbm: use random forest or gradient boosting (or both) to generate discovery subsample rules; "rf", "gbm", "both", "rf" by default
+### stability_selection: use stability selection rather than LASSO for penalized regression
+### bcf_nburn: number of bcf burn-in MCMC iterations
+### bcf_nsim: number of bcf MCMC iterations to save after burn-in
+### S: minumum size of terminal nodes for rule generating tree ensembles (larger number causes smaller trees to be grown)
+### L: maximum number of terminal nodes for rule generating tree ensembles
+### ntree: number of trees for rule generating tree ensembles
+### minsup: minimum (maximum for 1-minsup) proportion of times a rule must be met; if below (above max), rule is removed from rule matrix
+### corelim: maximum correlation allowed between rules in rule matrix; if above, rules are removed from rule matrix
+### outcome, exposure, effect_mods: names of variables from data to be analyzed
+### data: data set name
+### cov_em_levels: table to cross reference covariate/EM levels to corresponding indicators
+### bootstrap samples: number of bootstrap samples used to construct bootstrapped subgroup treatment effect estimates and confidence intervals
+### plot_estimate_num: number of largest subgroup estimates to display in barplot (excluding baseline estimate)
+
+cre <- function(disc_pct = 0.25, 
+                balanced_exposure_split = TRUE,
+                rf_or_gbm = "rf",
+                stability_selection = FALSE,
+                outcome, exposure, effect_mods,
+                bcf_nburn = 100, bcf_nsim = 1000,
+                S = 20, L = 5, ntree = 200,
+                minsup = 0.025, corelim = 1,
+                data,
+                cov_em_levels,
+                bootstrap_samples = 100,
+                plot_estimate_num = 6) {
+  
+  # Use complete cases of data outcome, exposure, and effect modifiers
+  data <- data %>%
+    dplyr::select(all_of(c(outcome, exposure, effect_mods))) %>%
+    na.omit()
+  
+  # convert binary factor covariates/EMs to binary indicators
+  data <- data %>%
+    mutate(across(cov_em_levels$var, ~case_when(.x %in% cov_em_levels$level_1 ~ 1,
+                                                .x %in% cov_em_levels$level_0 ~ 0)))
+  
+  # 1. Honest splitting: split data into discovery and inference
+  n <- nrow(data)
+  
+  ## balance exposure in discovery and inference
+  if (balanced_exposure_split == T) {
+    treat <- filter(data, get(exposure) == 1)
+    con <- filter(data, get(exposure) == 0)
+    treat_idx <- as.numeric(rownames(treat))
+    con_idx <- as.numeric(rownames(con))
+    
+    disc_idx <- c(sample(treat_idx, length(treat_idx) * disc_pct), sample(con_idx, length(con_idx) * disc_pct))
+  } else {
+    disc <- sample_frac(data, size = disc_pct, replace = FALSE)
+    disc_idx <- as.numeric(rownames(disc))
+  }
+  
+  disc_data <- data[disc_idx, ]
+  inf_data <- data[-disc_idx, ]
+  
+  
+  # 2. Discovery
+  ## (a) Rule generation
+  ### (i) Use BCF to obtain estimate of ITE
+  #### select matrix of effect modifiers/confounders and get propensity score estimates
+  X <- makeModelMatrixFromDataFrame(dplyr::select(disc_data, all_of(effect_mods)))
+  
+  ps_mod_formula <- as.formula(paste(exposure, paste(effect_mods, collapse = " + "), sep = "~"))
+  ps_mod <- glm(ps_mod_formula, 
+                family = binomial,
+                data = disc_data)
+
+  logit_ps <- predict(ps_mod, newdata = dplyr::select(disc_data, all_of(effect_mods)))
+  est_ps <- exp(logit_ps)/(1+exp(logit_ps))
+  
+  #### use propensity score estimates to estimate ITE with BCF
+  bcf_mod <- bcf(y = pull(disc_data, outcome),
+                 z = pull(disc_data, exposure),
+                 X, X, est_ps, nburn = bcf_nburn, nsim = bcf_nsim)
+  
+  disc_tau <- colMeans(bcf_mod$tau)
+  
+  ### (ii) fit random forest and gradient booting on ITE estimates
+  #### standardize ITE estimates
+  mu_disc_tau <- mean(disc_tau, na.rm = T)
+  sd_disc_tau <- sd(disc_tau, na.rm = T)
+  stzd_disc_tau <- (disc_tau - mu_disc_tau)/sd_disc_tau
+  
+  #### generate rules from RF
+  rf_rules <- genrulesRF(X = X,
+                         y = stzd_disc_tau,
+                         nt = ntree,
+                         S = S,
+                         L = L)
+  
+  #### generate rules from GBM
+  gbm_rules <- genrulesGBM(X = X,
+                           y = stzd_disc_tau,
+                           nt = ntree,
+                           S = S,
+                           L = L)
+  
+  ### (iii) extract rules 
+  if (rf_or_gbm == "rf") {
+    rules <- rf_rules
+  } else if (rf_or_gbm == "gbm") {
+    rules <- gbm_rules
+  } else if (rf_or_gbm == "both") {
+    rules <- c(rf_rules, gbm_rules)
+  } else {
+    stop("Rule generation must be one of 'rf', 'gbm', or 'both'.")
+  }
+    
+  ## (b) Rule-regularization
+  ### (i) generate \tilde{X}
+  dt <- createX.take1(X = X, 
+                      rules = rules, 
+                      t = minsup)
+  
+  #### final \tilde{X} and rules for penalized regression after minimum support/correlation checking
+  Xr <- dt[[1]]
+  final_rules <- dt[[2]]
+  
+  #### standardize rule matrix
+  std_Xr <- scale(Xr)
+  
+  ### (ii)/(iii) apply penalized regression to rule matrix
+  #### LASSO
+  if (stability_selection == F) {
+    lambda <- 10^seq(10, -2, length = 100)
+    # lasso_mod <- glmnet(std_Xr, stzd_disc_tau, 
+    #                     alpha = 1, lambda = lambda, intercept = FALSE)
+    cv_lasso <- cv.glmnet(std_Xr, stzd_disc_tau, 
+                         alpha = 1, intercept = FALSE)
+    bestlam <- cv_lasso$lambda.min
+    
+    ##### get coefficients of lambda 1 standard error from minimum
+    aa <- coef(cv_lasso, s=cv_lasso$lambda.1se)
+    index_aa <- which(aa[-1,1]!=0)
+    
+    ##### combine LASSO coefficients and rules
+    rules_pr <- data.frame(rules = final_rules[index_aa], 
+                           val = aa[index_aa + 1, 1])
+    
+  #### stability selection
+  } else {
+    stab_mod <- stabsel(std_Xr, 
+                       stzd_disc_tau, 
+                       fitfun = glmnet.lasso, 
+                       cutoff = 0.8, 
+                       PFER = 1, 
+                       args.fitfun = list(type = "conservative"))
+    # plot(stab_mod, main = "Lasso")
+    rules_pr <- final_rules[stab_mod$selected]
+  }
+  
+  
+  # 3. Inference
+  ## (a) Causal effect estimation
+  ### (i) Use BCF to obtain estimate of ITE
+  ps_mod_inf <- glm(ps_mod_formula, 
+                    family = binomial,
+                    data = inf_data)
+
+  logit_ps_inf <- predict(ps_mod_inf, newdata = dplyr::select(inf_data, all_of(effect_mods)))
+  est_ps_inf <- exp(logit_ps_inf)/(1+exp(logit_ps_inf))
+  
+  #### use propensity score estimates to estimate ITE with BCF
+  X_inf <- makeModelMatrixFromDataFrame(dplyr::select(inf_data, all_of(effect_mods)))
+
+  bcf_mod_inf <- bcf(y = pull(inf_data, outcome),
+                     z = pull(inf_data, exposure),
+                     X_inf, X_inf, est_ps_inf, nburn = bcf_nburn, nsim = bcf_nsim)
+  
+  tau_est_inf = colMeans(bcf_mod_inf$tau)
+  
+  ### (ii) generate \tilde{X} matrix for inference data from penalized regression rules
+  dt_inf <- createX.take1(X = X_inf, 
+                          rules = rules_pr$rules, 
+                          t = minsup)
+  
+  #### replace column names of \tilde{X} matrix with rules
+  replacements <- colnames(X_inf)
+  names(replacements) <- paste0("X\\[,", 1:length(replacements),"\\]")
+  colnames(dt_inf[[1]]) <- str_replace_all(dt_inf[[2]], replacements)
+  
+  X_tilde <- as.data.frame(dt_inf[[1]]) %>%
+    mutate(tau_est_inf = tau_est_inf)
+  
+  ### (iii) estimate CATE for each causal rule
+  #### estimate for inference data
+  cre_results <- estimate_cates(inf_dat = X_tilde,
+                                levels = cov_em_levels)
+  
+  # bootstrap subgroup CATEs and CIs
+  boot <- modelr::bootstrap(X_tilde, bootstrap_samples)
+  
+  boot_results <- map(boot$strap, ~ subgroup_boot(inf_dat = .,
+                                                  levels = cov_em_levels))
+  
+  boot_results <- boot_results %>%
+    map(., ~ dplyr::select(., -c(p, lower_ci, upper_ci))) %>%
+    bind_rows() %>%
+    group_by(subgroup) %>%
+    dplyr::summarise(mean = mean(estimate),
+                     lower_ci = quantile(estimate, 0.025),
+                     upper_ci = quantile(estimate, 0.975))
+  
+  # select (plot_estimate_num) subgroups with largest magnitude
+  largest_subgroups <- slice_max(boot_results, abs(mean), n = plot_estimate_num)
+  
+  if ("baseline_subgroup" %in% largest_subgroups$subgroup) {
+    largest_subgroups <- slice_max(boot_results, abs(mean), n = plot_estimate_num + 1)
+  } else {
+    largest_subgroups <- largest_subgroups %>%
+      add_row(filter(boot_results, subgroup == "baseline subgroup"))
+  }
+  
+  # barplot of bootstrapped CATEs with error bars
+  subgroup_barplot <- largest_subgroups %>%
+    ggplot(., aes(x=subgroup, y=mean)) +
+    geom_bar(stat = "identity", fill="skyblue", alpha=0.7) +
+    geom_errorbar( aes(x=subgroup, ymin=lower_ci, ymax=upper_ci), width=0.4, colour="orange", alpha=0.9, size=1.3) +
+    labs(x = "Subgroup",
+         y = "Bootstrapped CATE")
+  
+  # create collapsible tree of bootstrapped CATEs
+  subgroup_df <- generate_subgroups(cre_app_results = cre_results$ols_results,
+                                         levels = cov_em_levels)
+  
+  subgroup_tree_df <- subgroup_df %>%
+    unite("subgroup", sep = ", ", remove = F) %>%
+    left_join(., boot_results)
+  
+  subgroup_tree <- collapsibleTreeSummary(subgroup_tree_df,
+                                          hierarchy = names(subgroup_df),
+                                          root = "Subgroup",
+                                          attribute = "mean",
+                                          maxPercent = 90,
+                                          zoomable = F)
+  
+  # density_plot <- boot_results %>%
+  #   ggplot(aes(x = mean)) +
+  #   geom_histogram() +
+  #   geom_vline(xintercept = 0, linetype = "dashed") +
+  #   xlab("Conditional Average Treatment Effect") +
+  #   ylab("Density") +
+  #   theme_bw()
+
+  # return results
+  return(list("ols" = cre_results$ols_results,
+              "subgroups" = cre_results$subgroups,
+              "bootstrapped_subgroups" = boot_results,
+              "bootstrapped_barplot" = subgroup_barplot,
+              "bootstrapped_tree" = subgroup_tree))
+              # "density" = density_plot))
+
+}
+
+```
+
+# Applications
+
+```{r cre application 1: mild drought 4w, cough}
+
+# Load data
+setwd("~/Documents/cre_heterogeneity/data")
+data <- read_csv("data.csv")
+
+# Cleaning
+data <- data %>%
+  dplyr::rename(id = X1)
+
+## expand mother's education level (edulevel) levels to indicators
+## recode massmedia, partner, fic, waterpremise to "yes"/"no"
+data <- data %>%
+  mutate(edulevel_primary = case_when(edulevel == "primary" ~ "yes",
+                                      !is.na(edulevel) ~ "no"),
+         edulevel_secondary = case_when(edulevel == "secondary" ~ "yes",
+                                      !is.na(edulevel) ~ "no"),
+         edulevel_higher = case_when(edulevel == "higher" ~ "yes",
+                                      !is.na(edulevel) ~ "no"),
+         across(c(massmedia, partner, fic, waterpremise), ~case_when(.x == 1 ~ "yes",
+                                                                     .x == 0 ~ "no")))
+
+# Define outcomes, exposures
+outcomes <- c("cough", "fever", "diarrhea", "ari")
+exposures <- c("drought4w.mild", "drought4w.mod", "drought4w.sev", "flood4w.mild", "flood4w.mod", "flood4w.sev")
+
+# Define effect modifiers/confounders
+child_chars <- c("climzone", "season", "residence", "ageyears", "sex", "whz", "wasted", "twin", "bord")
+mother_chars <- c("bmi", "agegr", "edulevel_primary", "edulevel_secondary", "edulevel_higher", "literate", "massmedia", "partner")
+caregiving <- c("minacceptablediet", "hygiene", "stooldisposal", "breastfeeding")
+healthcare <- c("decisionhealth", "distancehealth", "permissionhealth", "healthcard", "utilization")
+vaccines <- c("fic", "pic", "rota", "dtp", "opv", "pcv", "mcv", "bcg", "vactotal")
+household <- c("floorfinished", "fuelsolid", "toiletimproved", "toiletshared", "watersafe", "waterpremise", "watertreatment", "wealth", "hhlhead", "hhlsize")
+effect_mods <- c(child_chars, mother_chars, caregiving, healthcare, vaccines, household)
+
+# Convert factor variables from effect modifiers/confounders
+factors <- sapply(data[, effect_mods], function(x) is.factor(x) | is.character(x))
+fac_effect_mods <- names(which(factors))
+data[, fac_effect_mods] <- lapply(data[, fac_effect_mods], as.factor) 
+
+# Create list to cross reference covariate/EM levels
+cov_em_levels <- tibble(var = c("residence", 
+                                "sex", 
+                                "edulevel_primary",
+                                "edulevel_secondary",
+                                "edulevel_higher",
+                                "massmedia",
+                                "partner", 
+                                "fic", 
+                                "waterpremise", 
+                                "hhlhead"),
+                        level_1 = c("rural", # residence
+                                    "male", # sex
+                                    "yes", # edulevel_primary
+                                    "yes", # edulevel_secondary
+                                    "yes", # edulevel_higher
+                                    "yes", # massmedia
+                                    "yes", # partner
+                                    "fully immunized", # fic
+                                    "yes", # waterpremise
+                                    "male" # hhlhead
+                                    ),
+                        level_0 = c("urban", # residence
+                                    "female", # sex
+                                    "no", # edulevel_primary
+                                    "no", # edulevel_secondary
+                                    "no", # edulevel_higher
+                                    "no", # massmedia
+                                    "no", # partner
+                                    "not fully immunized", # fic
+                                    "no", # waterpremise
+                                    "female" # hhlhead
+                                    ))
+
+# List of covariates/EMs (in this case, just binary factors)
+effect_mods <- cov_em_levels$var
+
+# Apply CRE to data
+cre_application <- cre(outcome = outcomes[1],
+                       exposure = exposures[1],
+                       effect_mods = effect_mods,
+                       data = filter(data, climzone == "Aw: Tropical, savannah"),
+                       cov_em_levels = cov_em_levels)
+
+write.csv(cre_application, paste0("cre_results_", Sys.Date(), ".csv"))
+
+```
+
+```{r cre application 2: moderate drought, malnutrition}
+
+# Load data
+setwd("~/Documents/cre_heterogeneity/data")
+data_dm <- read_csv("data_droughts_malnutrition.csv")
+
+# Create list to cross reference covariate/EM levels
+cov_em_levels_dm <- tibble(var = c("sex_male", 
+                                  "age_under2",
+                                  "education_none",
+                                  "mass_media",
+                                  "single_mother",
+                                  "agri_occupation",
+                                  "rural_residence",
+                                  "wealth_poor"),
+                          level_1 = rep("yes", 8),
+                          level_0 = rep("no", 8))
+
+# Cleaning
+## change all covariates/EMs to binary factors
+data_dm <- data_dm %>%
+  mutate(across(cov_em_levels_dm$var, ~case_when(.x == 1 ~ "yes",
+                                                 .x == 0 ~ "no")))
+
+data_dm[, cov_em_levels_dm$var] <- lapply(data_dm[, cov_em_levels_dm$var], as.factor)
+
+# List of covariates/EMs (in this case, just binary factors)
+effect_mods_dm <- cov_em_levels_dm$var
+
+# apply CRE to data
+cre_application_dm <- cre(outcome = "stunted",
+                       exposure = "drought_moderate",
+                       effect_mods = effect_mods_dm,
+                       data = data_dm,
+                       cov_em_levels = cov_em_levels_dm)
+
+setwd("~/Documents/heterogeneity_IS/cre_application")
+write.csv(cre_application_dm, paste0("cre_results_dm_", Sys.Date(), ".csv"))
+
+```
+
+```{r cre application 3: drought, stunted}
+
+# Load data
+setwd("~/Documents/cre_heterogeneity/data")
+data_ds <- read_csv("data_droughts_malnutrition_101822.csv")
+
+# Create list to cross reference covariate/EM levels
+outcome <- "stunted"
+exposure <- "drought"
+data_ds_em <- names(data_ds)[!(names(data_ds) %in% c(outcome, exposure))]
+
+cov_em_levels_ds <- tibble(var = data_ds_em,
+                           level_1 = rep("yes", length(data_ds_em)),
+                           level_0 = rep("no", length(data_ds_em)))
+
+# Cleaning
+## change all covariates/EMs to binary factors
+data_ds_cre <- data_ds %>%
+  mutate(across(cov_em_levels_ds$var, ~case_when(.x == 1 ~ "yes",
+                                                 .x == 0 ~ "no")),
+         across(cov_em_levels_ds$var, as.factor))
+
+# Run example for 10% of data
+data_ds_cre <- data_ds_cre %>%
+  sample_frac(0.1)
+
+data_ds <- data_ds %>%
+  sample_frac(0.1)
+
+# Apply CRE to data
+cre_application_ds <- cre(outcome = outcome,
+                       exposure = exposure,
+                       effect_mods = cov_em_levels_ds$var,
+                       data = data_ds_cre,
+                       cov_em_levels = cov_em_levels_ds)
+
+## predict CATEs from subgroups
+predict_cre_ds <- predict_cre(subgroups = cre_application_ds$subgroups,
+                              effect_mods = cov_em_levels_ds$var,
+                              data = data_ds_cre)
+
+# Apply GRF to data (20 folds)
+folds_n <- 20
+folds_ds <- sort(seq(nrow(data_ds)) %% folds_n) + 1
+
+grf_application_ds <- causal_forest(X = dplyr::select(data_ds, cov_em_levels_ds$var),
+                                    Y = pull(data_ds, outcome),
+                                    W = pull(data_ds, exposure),
+                                    tune.parameters = "all",
+                                    clusters = folds_ds)
+
+predict_grf_ds <- predict(grf_application_ds, estimate.variance = T) 
+
+predict_cre_ds <- predict_cre_ds %>%
+  mutate(application = "CRE")
+
+predict_grf_ds <- predict_grf_ds %>%
+  mutate(application = "GRF") %>%
+  dplyr::rename(estimate = predictions)
+
+predictions <- rbind(dplyr::select(predict_cre_ds, estimate, application),
+                     dplyr::select(predict_grf_ds, estimate, application))
+
+density_plot <- predictions %>%
+    ggplot(aes(x = estimate, fill = application)) +
+    geom_density(alpha = 0.5) +
+    geom_vline(xintercept = 0, linetype = "dashed") +
+    xlab("Conditional Average Treatment Effect") +
+    ylab("Density") +
+    theme_bw() +
+    scale_x_continuous(limits = c(-0.04,0.075))
+  
+
+ggplot(aes(x = predictions, fill = outcome)) +
+  geom_density(alpha = 0.5) +
+  geom_vline(xintercept = 0, linetype = "dashed")+
+  xlab("Estimated Conditional Average Treatment Effect of Home Loss") +
+  ylab("Density") +
+  labs(fill = "Outcome Assessed",color = "Outcome Assessed") +
+  theme_bw() +
+  scale_fill_nejm() +
+  ggtitle("(A) Functional Disability 2.5 Years After the Earthquake Onset") +
+  theme(text = element_text(family = "serif",size = 12),
+        title = element_text(size = 12),
+        axis.text = element_text(size = 12),
+        plot.title = element_text(hjust = 0.5)) +
+  scale_x_continuous(limits = c(-1.5,0.5))
+
+
+setwd("~/Documents/heterogeneity_IS/cre_application")
+write.csv(cre_application_ds, paste0("cre_results_ds_", Sys.Date(), ".csv"))
+
+```
